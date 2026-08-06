@@ -18,8 +18,8 @@ type Address = {
   phone: string;
   line1: string;
   city: string;
-  country: string;
   isDefault: boolean;
+  country: string;
 };
 
 function Checkout() {
@@ -130,11 +130,10 @@ function Checkout() {
                   {addresses.map((address) => (
                     <label
                       key={address.id}
-                      className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm ${
-                        selectedAddress === address.id
+                      className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm ${selectedAddress === address.id
                           ? "border-primary bg-primary-light/40"
                           : "border-line"
-                      }`}
+                        }`}
                     >
                       <input
                         type="radio"
