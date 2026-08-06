@@ -11,6 +11,7 @@ import { gqlAuth } from "@/lib/graphql";
 import { useAuth } from "@/lib/auth";
 import { emitCartUpdated } from "@/lib/cart-count";
 import { apiMode, type ApiCart, type UiMode } from "@/lib/types";
+import { TrashIcon } from "./icons";
 
 const CART_FIELDS = `
   itemCount total
@@ -28,6 +29,11 @@ export default function CartPage({ mode }: { mode: UiMode }) {
   const [cart, setCart] = useState<ApiCart | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /* Removing the last unit is destructive, so it asks first. */
+  const [confirmRemove, setConfirmRemove] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -177,13 +183,30 @@ export default function CartPage({ mode }: { mode: UiMode }) {
                         </div>
 
                         <div className="flex items-center rounded-md border border-line">
-                          <button
-                            type="button"
-                            onClick={() => updateQty(item.id, item.quantity - 1)}
-                            className="h-8 w-8 text-heading hover:text-primary"
-                          >
-                            −
-                          </button>
+                          {item.quantity <= 1 ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setConfirmRemove({
+                                  id: item.id,
+                                  name: item.product.name,
+                                })
+                              }
+                              aria-label={`Remove ${item.product.name} from cart`}
+                              className="flex h-8 w-8 items-center justify-center text-muted hover:text-primary"
+                            >
+                              <TrashIcon size={15} />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => updateQty(item.id, item.quantity - 1)}
+                              aria-label="Decrease quantity"
+                              className="h-8 w-8 text-heading hover:text-primary"
+                            >
+                              −
+                            </button>
+                          )}
                           <span className="w-10 text-center text-sm font-semibold text-heading">
                             {item.quantity}
                           </span>
@@ -247,6 +270,56 @@ export default function CartPage({ mode }: { mode: UiMode }) {
           )}
         </div>
       </main>
+
+      {/* Remove confirmation */}
+      {confirmRemove && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-heading/50 px-4"
+          onClick={() => setConfirmRemove(null)}
+          role="presentation"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="remove-title"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-lg bg-white p-6 text-center shadow-[0_8px_32px_rgba(43,52,69,0.25)]"
+          >
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary-light text-primary">
+              <TrashIcon size={22} />
+            </div>
+            <h2 id="remove-title" className="text-base font-bold text-heading">
+              Remove this item?
+            </h2>
+            <p className="mt-1.5 text-sm text-body">
+              <span className="font-medium text-heading">
+                {confirmRemove.name}
+              </span>{" "}
+              will be removed from your cart.
+            </p>
+
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmRemove(null)}
+                className="flex-1 rounded border border-line py-2.5 text-sm font-semibold text-heading transition-colors hover:border-primary hover:text-primary"
+              >
+                No, keep it
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  removeItem(confirmRemove.id);
+                  setConfirmRemove(null);
+                }}
+                className="flex-1 rounded bg-primary py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
+              >
+                Yes, remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

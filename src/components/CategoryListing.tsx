@@ -140,6 +140,9 @@ export default function CategoryListing({
   const [sort, setSort] = useState<SortKey>("relevance");
   const [view, setView] = useState<"grid" | "list">("grid");
   const [page, setPage] = useState(1);
+  /* On mobile the sidebar is an off-canvas drawer so products stay above the
+     fold; from lg up it is always visible and this flag is ignored. */
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const toggleBrand = (brand: string) => {
     const next = new Set(selectedBrands);
@@ -184,6 +187,23 @@ export default function CategoryListing({
     return list;
   }, [mode, category, subcategory, searchTerm, priceMin, priceMax, selectedBrands, minRating, onSaleOnly, maxMoq, sort, isWholesale]);
 
+  const activeFilterCount =
+    (priceMin || priceMax ? 1 : 0) +
+    selectedBrands.size +
+    (minRating > 0 ? 1 : 0) +
+    (onSaleOnly ? 1 : 0) +
+    (maxMoq > 0 ? 1 : 0);
+
+  const clearFilters = () => {
+    setPriceMin("");
+    setPriceMax("");
+    setSelectedBrands(new Set());
+    setMinRating(0);
+    setOnSaleOnly(false);
+    setMaxMoq(0);
+    setPage(1);
+  };
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -195,8 +215,8 @@ export default function CategoryListing({
     <main className="flex-1 bg-paper pb-14 pt-6">
       <div className="container mx-auto px-2">
         {/* Top bar: title, count, sort, view toggle */}
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg bg-white px-5 py-4 shadow-[0_1px_3px_rgba(43,52,69,0.1)]">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-4 shadow-[0_1px_3px_rgba(43,52,69,0.1)] sm:px-5">
+          <div className="min-w-0">
             <nav aria-label="Breadcrumb" className="text-xs text-muted">
               <Link href={prefix || "/"} className="hover:text-primary">
                 Home
@@ -221,17 +241,34 @@ export default function CategoryListing({
             <p className="text-xs text-muted">{filtered.length} results found</p>
           </div>
 
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-sm text-muted">
-              Sort by:
-              <span className="relative">
+          <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-4">
+            {/* Mobile filter trigger */}
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(true)}
+              className="flex h-10 items-center gap-2 rounded-md border border-line px-3 text-sm font-semibold text-heading hover:border-primary hover:text-primary lg:hidden"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 5h18v2l-7 7v5l-4 2v-7L3 7V5Z" />
+              </svg>
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            <label className="flex flex-1 items-center gap-2 text-sm text-muted sm:flex-none">
+              <span className="hidden sm:inline">Sort by:</span>
+              <span className="relative flex-1 sm:flex-none">
                 <select
                   value={sort}
                   onChange={(e) => {
                     setSort(e.target.value as SortKey);
                     setPage(1);
                   }}
-                  className="appearance-none rounded-md border border-line bg-white py-2 pl-3 pr-8 text-sm text-heading outline-none focus:border-primary"
+                  className="h-10 w-full appearance-none rounded-md border border-line bg-white pl-3 pr-8 text-sm text-heading outline-none focus:border-primary sm:w-auto"
                 >
                   <option value="relevance">Relevance</option>
                   <option value="price-asc">Price: Low to High</option>
@@ -245,7 +282,7 @@ export default function CategoryListing({
               </span>
             </label>
 
-            <div className="flex items-center gap-1 text-sm text-muted">
+            <div className="hidden items-center gap-1 text-sm text-muted sm:flex">
               View:
               <button
                 type="button"
@@ -272,8 +309,44 @@ export default function CategoryListing({
         </div>
 
         <div className="mt-5 flex flex-col gap-5 lg:flex-row">
+          {/* Backdrop for the mobile drawer */}
+          {filtersOpen && (
+            <div
+              onClick={() => setFiltersOpen(false)}
+              className="fixed inset-0 z-40 bg-heading/40 lg:hidden"
+              aria-hidden
+            />
+          )}
+
           {/* ---------------- Sidebar filters ---------------- */}
-          <aside className="h-fit w-full shrink-0 rounded-lg bg-white p-5 shadow-[0_1px_3px_rgba(43,52,69,0.1)] lg:w-72">
+          <aside
+            className={`fixed inset-y-0 left-0 z-50 w-[85%] max-w-xs shrink-0 overflow-y-auto bg-white p-5 shadow-[0_1px_3px_rgba(43,52,69,0.1)] lg:static lg:block lg:h-fit lg:w-72 lg:max-w-none lg:overflow-visible lg:rounded-lg ${
+              filtersOpen ? "block" : "hidden"
+            }`}
+          >
+            {/* Drawer header — mobile only */}
+            <div className="mb-4 flex items-center justify-between lg:hidden">
+              <h2 className="text-base font-bold text-heading">Filters</h2>
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(false)}
+                aria-label="Close filters"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-paper text-heading hover:text-primary"
+              >
+                ✕
+              </button>
+            </div>
+
+            {activeFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="mb-4 w-full rounded-md border border-line py-2 text-xs font-semibold text-primary hover:border-primary"
+              >
+                Clear all filters ({activeFilterCount})
+              </button>
+            )}
+
             {/* Categories */}
             <h3 className="mb-3 text-sm font-semibold text-heading">
               Categories
@@ -455,13 +528,22 @@ export default function CategoryListing({
                 </li>
               )}
             </ul>
+
+            {/* Drawer footer — mobile only */}
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(false)}
+              className="mt-6 w-full rounded bg-primary py-3 text-sm font-semibold text-white hover:bg-primary-dark lg:hidden"
+            >
+              Show {filtered.length} results
+            </button>
           </aside>
 
           {/* ---------------- Products ---------------- */}
           <div className="min-w-0 flex-1">
             {paged.length > 0 ? (
               view === "grid" ? (
-                <div className="grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
                   {paged.map((product) => (
                     <ProductCard key={product.id} product={product} mode={mode} />
                   ))}

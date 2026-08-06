@@ -7,7 +7,8 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useCartCount, useWishlistCount } from "@/lib/cart-count";
 import SearchBox from "./SearchBox";
-import { UserIcon, BagIcon, HeartIcon, SwapIcon } from "./icons";
+import ModeSwitch from "./ModeSwitch";
+import { UserIcon, BagIcon, HeartIcon } from "./icons";
 
 export default function Header() {
   const [accountOpen, setAccountOpen] = useState(false);
@@ -16,8 +17,7 @@ export default function Header() {
   const { user, logout } = useAuth();
   const cartCount = useCartCount();
   const wishlistCount = useWishlistCount();
-  const isWholesale = pathname.startsWith("/wholesale");
-  const prefix = isWholesale ? "/wholesale" : "";
+  const prefix = pathname.startsWith("/wholesale") ? "/wholesale" : "";
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -49,14 +49,8 @@ export default function Header() {
 
         {/* Account + Cart */}
         <div className="flex shrink-0 items-center gap-3">
-          {/* Retail / Wholesale switcher */}
-          <Link
-            href={isWholesale ? "/" : "/wholesale"}
-            className="flex h-9 items-center gap-1.5 rounded-full border border-line bg-white px-3 text-xs font-medium text-heading transition-colors hover:border-primary hover:text-primary sm:h-11 sm:gap-2 sm:px-5 sm:text-sm"
-          >
-            {isWholesale ? "Retail" : "Wholesale"}
-            <SwapIcon size={14} />
-          </Link>
+          {/* Retail / Wholesale switcher — on mobile it moves to the category bar */}
+          <ModeSwitch className="hidden md:flex md:h-11 md:px-5" />
 
           {/* Account menu */}
           <div ref={accountRef} className="relative">
@@ -79,7 +73,7 @@ export default function Header() {
                     {[
                       { label: "My Account", href: "/account" },
                       { label: "Orders", href: "/account/orders" },
-                      { label: "Wishlist", href: "/account/wishlist" },
+                      { label: "Wishlist", href: "/wishlist" },
                       { label: "Messages", href: "/account/messages" },
                       { label: "Notifications", href: "/account/notifications" },
                     ].map((item) => (
@@ -127,7 +121,7 @@ export default function Header() {
 
           {/* Wishlist */}
           <Link
-            href="/account/wishlist"
+            href="/wishlist"
             aria-label="Wishlist"
             className="relative flex h-11 w-11 items-center justify-center rounded-full bg-paper text-heading hover:bg-line/60 hover:text-primary"
           >

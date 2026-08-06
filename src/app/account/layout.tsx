@@ -10,9 +10,9 @@ import { useAuth } from "@/lib/auth";
 const links = [
   { label: "Profile", href: "/account" },
   { label: "Orders", href: "/account/orders" },
-  { label: "Wishlist", href: "/account/wishlist" },
   { label: "Messages", href: "/account/messages" },
   { label: "Notifications", href: "/account/notifications" },
+  { label: "Change Password", href: "/account/password" },
 ];
 
 export default function AccountLayout({

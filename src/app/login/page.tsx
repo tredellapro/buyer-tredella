@@ -5,15 +5,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import SocialAuth from "@/components/SocialAuth";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
-  const next = useSearchParams().get("next") ?? "/";
+  const params = useSearchParams();
+  const next = params.get("next") ?? "/";
+  // errors can also arrive from a failed social redirect
+  const [error, setError] = useState<string | null>(params.get("error"));
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +67,14 @@ function LoginForm() {
             placeholder="Password"
             className="h-11 w-full rounded-md border border-line px-4 text-sm outline-none placeholder:text-muted focus:border-primary"
           />
+          <div className="flex justify-end">
+            <Link
+              href="/forgot-password"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
           {error && <p className="text-sm text-primary">{error}</p>}
           <button
             type="submit"
@@ -73,6 +84,8 @@ function LoginForm() {
             {busy ? "Signing in…" : "Sign In"}
           </button>
         </form>
+
+        <SocialAuth next={next} />
 
         <p className="mt-5 text-center text-sm text-muted">
           Don&apos;t have an account?{" "}

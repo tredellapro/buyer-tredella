@@ -4,10 +4,14 @@ import { useCallback, useEffect, useState, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { toast } from "react-toastify";
+import { HiStar, HiOutlineStar, HiOutlinePhoto, HiXMark } from "react-icons/hi2";
 import { formatAED } from "@/data/products";
-import { gqlAuth } from "@/lib/graphql";
+import { gqlAuth, uploadReviewImages } from "@/lib/graphql";
 import { useAuth } from "@/lib/auth";
 import type { ApiOrder } from "@/lib/types";
+
+const MAX_REVIEW_PHOTOS = 5;
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -17,7 +21,8 @@ export default function OrderDetailPage({ params }: Props) {
   const [reviewFor, setReviewFor] = useState<string | null>(null);
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const { user } = useAuth();
   const placed = useSearchParams().get("placed");
 
@@ -45,21 +50,33 @@ export default function OrderDetailPage({ params }: Props) {
   }, [user, load]);
 
   const submitReview = async (orderItemId: string) => {
-    setMessage(null);
+    setSubmitting(true);
     try {
+      // upload photos first so the review is saved with their URLs
+      const images = photos.length > 0 ? await uploadReviewImages(photos) : [];
       await gqlAuth(
-        `mutation($orderItemId: ID!, $rating: Int!, $text: String!) {
-          createReview(orderItemId: $orderItemId, rating: $rating, text: $text) { id }
+        `mutation($orderItemId: ID!, $rating: Int!, $text: String!, $images: [String!]) {
+          createReview(orderItemId: $orderItemId, rating: $rating, text: $text, images: $images) { id }
         }`,
-        { orderItemId, rating, text }
+        { orderItemId, rating, text, images }
       );
-      setMessage("Review submitted — thank you!");
+      toast.success("Review submitted — thank you!");
       setReviewFor(null);
       setText("");
+      setPhotos([]);
       load();
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Could not submit review.");
+      toast.error(e instanceof Error ? e.message : "Could not submit review.");
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const addPhotos = (files: FileList | null) => {
+    if (!files) return;
+    setPhotos((prev) =>
+      [...prev, ...Array.from(files)].slice(0, MAX_REVIEW_PHOTOS)
+    );
   };
 
   if (!order)
@@ -74,11 +91,6 @@ export default function OrderDetailPage({ params }: Props) {
       {placed && (
         <div className="rounded-lg bg-green-50 px-5 py-4 text-sm font-medium text-green-700">
           ✓ Your order has been placed successfully!
-        </div>
-      )}
-      {message && (
-        <div className="rounded-lg bg-primary-light px-5 py-3 text-sm font-medium text-primary">
-          {message}
         </div>
       )}
 
@@ -155,34 +167,95 @@ export default function OrderDetailPage({ params }: Props) {
 
               {reviewFor === item.id && (
                 <div className="mt-3 rounded-md bg-paper p-4">
-                  <div className="flex items-center gap-1">
+                  <p className="text-xs font-semibold text-heading">
+                    How would you rate it?
+                  </p>
+                  <div className="mt-1 flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
                         type="button"
                         onClick={() => setRating(star)}
-                        className="text-xl"
-                        aria-label={`${star} stars`}
+                        aria-label={`${star} star${star > 1 ? "s" : ""}`}
                       >
-                        <span className={star <= rating ? "text-amber-400" : "text-line"}>
-                          ★
-                        </span>
+                        {star <= rating ? (
+                          <HiStar size={26} className="text-amber-400" />
+                        ) : (
+                          <HiOutlineStar size={26} className="text-line" />
+                        )}
                       </button>
                     ))}
                   </div>
+
                   <textarea
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     placeholder="Share your experience with this product…"
                     rows={3}
-                    className="mt-2 w-full rounded-md border border-line p-3 text-sm outline-none placeholder:text-muted focus:border-primary"
+                    className="mt-3 w-full rounded-md border border-line p-3 text-sm outline-none placeholder:text-muted focus:border-primary"
                   />
+
+                  {/* Photo upload */}
+                  <div className="mt-3">
+                    <div className="flex flex-wrap gap-2">
+                      {photos.map((file, i) => (
+                        <div
+                          key={`${file.name}-${i}`}
+                          className="relative h-20 w-20 overflow-hidden rounded-md border border-line"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Selected photo ${i + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            aria-label="Remove photo"
+                            onClick={() =>
+                              setPhotos((prev) =>
+                                prev.filter((_, idx) => idx !== i)
+                              )
+                            }
+                            className="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-heading/70 text-white hover:bg-primary"
+                          >
+                            <HiXMark size={12} />
+                          </button>
+                        </div>
+                      ))}
+
+                      {photos.length < MAX_REVIEW_PHOTOS && (
+                        <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-line bg-white text-muted hover:border-primary hover:text-primary">
+                          <HiOutlinePhoto size={20} />
+                          <span className="text-[10px] font-medium">
+                            Add photo
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => {
+                              addPhotos(e.target.files);
+                              e.target.value = "";
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted">
+                      Add up to {MAX_REVIEW_PHOTOS} photos (max 5 MB each) —
+                      shoppers find photo reviews far more useful.
+                    </p>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => submitReview(item.id)}
-                    className="mt-2 rounded bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+                    disabled={submitting}
+                    className="mt-3 rounded bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
                   >
-                    Submit Review
+                    {submitting ? "Submitting…" : "Submit Review"}
                   </button>
                 </div>
               )}

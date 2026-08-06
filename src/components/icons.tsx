@@ -55,6 +55,12 @@ export const GridIcon = ({ size, ...p }: IconProps) => (
   </svg>
 );
 
+export const TrashIcon = ({ size, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}>
+    <path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3" />
+  </svg>
+);
+
 export const HeartIcon = ({ size, ...p }: IconProps) => (
   <svg {...base(size)} {...p}>
     <path d="M12 21C7 17 3 13.5 3 9.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 9 2.5c0 4-4 7.5-9 11.5Z" />

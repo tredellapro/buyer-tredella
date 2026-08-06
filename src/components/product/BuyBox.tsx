@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { toast } from "react-toastify";
 import { formatAED } from "@/data/products";
 import { gqlAuth } from "@/lib/graphql";
 import { apiMode, type ApiProduct, type UiMode } from "@/lib/types";
@@ -25,7 +26,6 @@ export default function BuyBox({ product, mode }: Props) {
   const minQty = isWholesale ? product.minOrder : 1;
   const [quantity, setQuantity] = useState(minQty);
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [wished, setWished] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
@@ -50,7 +50,6 @@ export default function BuyBox({ product, mode }: Props) {
   const addToCart = async () => {
     if (!requireLogin()) return;
     setBusy(true);
-    setFeedback(null);
     try {
       await gqlAuth(
         `mutation AddToCart($productId: ID!, $quantity: Int!, $mode: Mode!) {
@@ -58,10 +57,14 @@ export default function BuyBox({ product, mode }: Props) {
         }`,
         { productId: product.id, quantity, mode: apiMode(mode) }
       );
-      setFeedback("Added to cart ✓");
       emitCartUpdated();
+      toast.success(
+        `${quantity} ${quantity > 1 ? "items" : "item"} added to your cart`
+      );
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Something went wrong.");
+      toast.error(
+        error instanceof Error ? error.message : "Something went wrong."
+      );
     } finally {
       setBusy(false);
     }
@@ -77,6 +80,7 @@ export default function BuyBox({ product, mode }: Props) {
         );
         setWished(false);
         emitWishlistUpdated();
+        toast.success("Removed from your wishlist");
       } else {
         await gqlAuth(
           `mutation($productId: ID!, $mode: Mode!) { addToWishlist(productId: $productId, mode: $mode) { id } }`,
@@ -84,6 +88,7 @@ export default function BuyBox({ product, mode }: Props) {
         );
         setWished(true);
         emitWishlistUpdated();
+        toast.success("Saved to your wishlist");
       }
     } catch {
       /* keep silent for wishlist */
@@ -228,16 +233,6 @@ export default function BuyBox({ product, mode }: Props) {
             <path d="M12 21C7 17 3 13.5 3 9.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 9 2.5c0 4-4 7.5-9 11.5Z" />
           </svg>
         </button>
-
-        {feedback && (
-          <span
-            className={`text-sm font-medium ${
-              feedback.includes("✓") ? "text-green-600" : "text-primary"
-            }`}
-          >
-            {feedback}
-          </span>
-        )}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import SocialAuth from "@/components/SocialAuth";
 
 function RegisterForm() {
   const [name, setName] = useState("");
@@ -83,6 +84,8 @@ function RegisterForm() {
             {busy ? "Creating account…" : "Create Account"}
           </button>
         </form>
+
+        <SocialAuth next={next} />
 
         <p className="mt-5 text-center text-sm text-muted">
           Already have an account?{" "}
