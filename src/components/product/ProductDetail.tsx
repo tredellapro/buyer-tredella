@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Header from "@/components/Header";
 import Navbar from "@/components/Navbar";
-import ProductCard from "@/components/ProductCard";
+import ProductSlider from "@/components/ProductSlider";
 import Gallery from "./Gallery";
 import BuyBox from "./BuyBox";
 import SellerCard from "./SellerCard";
 import QASection from "./QASection";
+import ReviewsSection from "./ReviewsSection";
 import { gql } from "@/lib/graphql";
 import {
   apiMode,
@@ -295,78 +296,18 @@ export default async function ProductDetail({ slug, mode }: Props) {
 
           {/* Reviews + Q&A */}
           <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <section className="rounded-lg bg-white p-6 shadow-[0_1px_3px_rgba(43,52,69,0.1)]">
-              <h2 className="text-lg font-bold text-heading">
-                Customer Reviews
-              </h2>
+            <ReviewsSection
+              reviews={reviews.items}
+              average={reviews.average}
+              total={reviews.pageInfo.total}
+              distribution={reviews.distribution}
+            />
 
-              {reviews.pageInfo.total > 0 ? (
-                <>
-                  <div className="mt-3 flex items-center gap-3">
-                    <span className="text-3xl font-bold text-heading">
-                      {reviews.average}
-                    </span>
-                    <div>
-                      <Stars rating={reviews.average} />
-                      <p className="text-xs text-muted">
-                        Based on {reviews.pageInfo.total} reviews
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 space-y-1">
-                    {[5, 4, 3, 2, 1].map((star) => {
-                      const count = reviews.distribution[star - 1] ?? 0;
-                      const pct = reviews.pageInfo.total
-                        ? (count / reviews.pageInfo.total) * 100
-                        : 0;
-                      return (
-                        <div key={star} className="flex items-center gap-2 text-xs">
-                          <span className="w-8 text-muted">{star} ★</span>
-                          <div className="h-2 flex-1 rounded-full bg-paper">
-                            <div
-                              className="h-2 rounded-full bg-amber-400"
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                          <span className="w-6 text-right text-muted">{count}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="mt-5 space-y-5">
-                    {reviews.items.map((review) => (
-                      <div
-                        key={review.id}
-                        className="border-b border-line pb-4 last:border-0"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Stars rating={review.rating} size={14} />
-                          {review.verified && (
-                            <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700">
-                              Verified Purchase
-                            </span>
-                          )}
-                        </div>
-                        <p className="mt-1.5 text-sm text-body">{review.text}</p>
-                        <p className="mt-1 text-xs text-muted">
-                          {review.user.name} ·{" "}
-                          {new Date(review.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <p className="mt-3 text-sm text-muted">
-                  No reviews yet. Reviews can be written from your orders after
-                  delivery is completed.
-                </p>
-              )}
-            </section>
-
-            <QASection productId={product.id} initialQuestions={questions} />
+            <QASection
+              productId={product.id}
+              initialQuestions={questions}
+              sellerName={product.seller.name}
+            />
           </div>
 
           {/* Related products */}
@@ -375,15 +316,10 @@ export default async function ProductDetail({ slug, mode }: Props) {
               <h2 className="mb-5 text-2xl font-bold text-heading">
                 Related Products
               </h2>
-              <div className="flex gap-5 overflow-x-auto pb-2 [&>*]:w-64 [&>*]:shrink-0">
-                {related.map((rp) => (
-                  <ProductCard
-                    key={rp.id}
-                    product={toCardProduct(rp)}
-                    mode={mode}
-                  />
-                ))}
-              </div>
+              <ProductSlider
+                products={related.map(toCardProduct)}
+                mode={mode}
+              />
             </section>
           )}
         </div>

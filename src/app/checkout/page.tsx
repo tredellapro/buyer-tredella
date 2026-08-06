@@ -92,7 +92,7 @@ function Checkout() {
         { mode, addressId: selectedAddress }
       );
       emitCartUpdated();
-      router.push(`/account/orders/${data.createOrder.id}?placed=1`);
+      router.push(`/thank-you?order=${data.createOrder.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not place order.");
       setBusy(false);

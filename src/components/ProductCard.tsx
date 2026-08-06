@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { formatAED, type Product } from "@/data/products";
+import CardActions from "./CardActions";
 
 type Props = {
   product: Product;
@@ -40,23 +41,32 @@ export default function ProductCard({ product, mode }: Props) {
 
   return (
     <div className="group flex flex-col overflow-hidden rounded-lg bg-white shadow-[0_1px_3px_rgba(43,52,69,0.1)] transition-shadow hover:shadow-[0_8px_24px_rgba(43,52,69,0.15)]">
-      {/* Image */}
-      <Link href={detailHref} className="relative block">
+      {/* Image with quick actions */}
+      <div className="relative">
         {discount > 0 && (
           <span className="absolute left-3 top-3 z-10 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-white">
             {isWholesale ? `Save up to ${discount}%` : `${discount}% off`}
           </span>
         )}
-        <div className="flex aspect-square items-center justify-center p-6">
-          <Image
-            src={product.image}
-            alt={product.name}
-            width={300}
-            height={300}
-            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
-          />
-        </div>
-      </Link>
+
+        <CardActions
+          productSlug={product.slug}
+          minOrder={product.minOrder}
+          mode={mode}
+        />
+
+        <Link href={detailHref} className="block">
+          <div className="flex aspect-square items-center justify-center p-6">
+            <Image
+              src={product.image}
+              alt={product.name}
+              width={300}
+              height={300}
+              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+            />
+          </div>
+        </Link>
+      </div>
 
       {/* Body */}
       <div className="flex flex-1 flex-col gap-1.5 border-t border-line p-4">
@@ -125,7 +135,7 @@ export default function ProductCard({ product, mode }: Props) {
           href={detailHref}
           className="mt-auto rounded bg-primary py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
         >
-          {isWholesale ? "Get Bulk Quote" : "Add to Cart"}
+          View Product
         </Link>
       </div>
     </div>

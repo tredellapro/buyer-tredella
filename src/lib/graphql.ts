@@ -54,6 +54,25 @@ export async function gql<T>(
   return json.data;
 }
 
+export const API_ORIGIN = GRAPHQL_URL.replace(/\/graphql\/?$/, "");
+
+/** Upload review photos; returns their public URLs. */
+export async function uploadReviewImages(files: File[]): Promise<string[]> {
+  const token = window.localStorage.getItem("tredella-token");
+  const body = new FormData();
+  for (const file of files) body.append("images", file);
+
+  const response = await fetch(`${API_ORIGIN}/upload/review-images`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body,
+  });
+  const json = (await response.json()) as { urls?: string[]; error?: string };
+  if (!response.ok || json.error)
+    throw new Error(json.error ?? "Could not upload your photos.");
+  return json.urls ?? [];
+}
+
 /** Client-side helper that automatically attaches the stored auth token. */
 export function gqlAuth<T>(
   query: string,

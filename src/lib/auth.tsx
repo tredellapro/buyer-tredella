@@ -18,6 +18,8 @@ type AuthContextValue = {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  /** Sign in from a token issued elsewhere, e.g. after a password reset. */
+  adoptSession: (token: string, user: AuthUser) => void;
   logout: () => void;
 };
 
@@ -85,6 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const adoptSession = useCallback((nextToken: string, nextUser: AuthUser) => {
+    persist(nextToken, nextUser);
+  }, []);
+
   const logout = useCallback(() => {
     window.localStorage.removeItem(TOKEN_KEY);
     window.localStorage.removeItem(USER_KEY);
@@ -94,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, login, register, logout }}
+      value={{ user, token, loading, login, register, adoptSession, logout }}
     >
       {children}
     </AuthContext.Provider>

@@ -90,11 +90,18 @@ export type ApiOrder = {
   status: string;
   total: number;
   createdAt: string;
+  address?: {
+    fullName: string;
+    phone: string;
+    line1: string;
+    city: string;
+    country: string;
+  } | null;
   sellerOrders: {
     id: string;
     status: string;
     subtotal: number;
-    seller: { name: string; slug: string };
+    seller: { name: string; slug: string; deliveryEstimate?: string };
     items: {
       id: string;
       name: string;
