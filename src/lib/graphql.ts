@@ -9,7 +9,6 @@ export const GRAPHQL_WS_URL =
 
 type GqlOptions = {
   token?: string | null;
-  /** Next.js revalidation (server components). Default 60s; 0 = no cache. */
   revalidate?: number;
 };
 
