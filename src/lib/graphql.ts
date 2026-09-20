@@ -83,3 +83,37 @@ export function gqlAuth<T>(
       : null;
   return gql<T>(query, variables, { token, revalidate: 0 });
 }
+
+export type ChatAttachmentUpload = {
+  url: string;
+  name: string;
+  sizeBytes: number;
+  mimeType: string;
+};
+
+/** Upload one file to hang off a chat message. */
+export async function uploadChatAttachment(
+  file: File
+): Promise<ChatAttachmentUpload> {
+  const token = window.localStorage.getItem("tredella-token");
+  if (!token) throw new Error("Please sign in again.");
+  if (file.size > 10 * 1024 * 1024)
+    throw new Error("Attachments must be under 10 MB.");
+
+  const body = new FormData();
+  body.append("file", file);
+
+  const response = await fetch(`${API_ORIGIN}/upload/chat-attachment`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body,
+  });
+
+  if (!response.ok) {
+    const failure = (await response.json().catch(() => null)) as {
+      message?: string;
+    } | null;
+    throw new Error(failure?.message ?? "That file could not be uploaded.");
+  }
+  return (await response.json()) as ChatAttachmentUpload;
+}

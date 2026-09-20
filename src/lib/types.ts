@@ -130,6 +130,8 @@ export type ApiMessage = {
   text: string;
   createdAt: string;
   isMine: boolean;
+  /** Opaque string — read it through parseAttachment, not directly. */
+  attachment: string | null;
   sender: { name: string };
 };
 
